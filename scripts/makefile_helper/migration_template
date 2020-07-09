@@ -1,0 +1,56 @@
+package migrate
+
+import (
+    "context"
+    "fmt"
+
+    "github.com/opentracing/opentracing-go"
+)
+
+// {struct_name} is struct to define a migration with ID {current_time}_{migration_name}
+type {struct_name} struct {}
+
+// ID return unique identifier for each migration. The prefix is unix time when this migration is created.
+func (m {struct_name}) ID(ctx context.Context) string {
+    span, ctx := opentracing.StartSpanFromContext(ctx, "{struct_name}.ID")
+    defer func() {
+        ctx.Done()
+    	span.Finish()
+    }()
+
+    return fmt.Sprintf("%d_%s.sql", {current_time}, "{migration_name}")
+}
+
+// SequenceNumber return current time when the migration is created,
+// this useful to see the current status of the migration.
+func (m {struct_name}) SequenceNumber(ctx context.Context) int {
+    span, ctx := opentracing.StartSpanFromContext(ctx, "{struct_name}.SequenceNumber")
+    defer func() {
+        ctx.Done()
+    	span.Finish()
+    }()
+
+    return {current_time}
+}
+
+// Up return sql migration for sync database
+func (m {struct_name}) Up(ctx context.Context, tenantID string) (sql string, err error) {
+    span, ctx := opentracing.StartSpanFromContext(ctx, "{struct_name}.Up")
+    defer func() {
+        ctx.Done()
+    	span.Finish()
+    }()
+
+    return
+}
+
+// Down return sql migration for rollback database
+func (m {struct_name}) Down(ctx context.Context, tenantID string) (sql string, err error) {
+    span, ctx := opentracing.StartSpanFromContext(ctx, "{struct_name}.Down")
+    defer func() {
+        ctx.Done()
+    	span.Finish()
+    }()
+
+    return
+}

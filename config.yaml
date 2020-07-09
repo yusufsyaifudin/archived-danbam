@@ -1,0 +1,57 @@
+# settings for appRepo
+app:
+  db_type: "postgres"
+  postgres:
+    master:
+      username: "postgres"
+      password: "postgres"
+      host: "localhost"
+      port: 5432
+      db: "danbam_app"
+    # username and password in slave is read-only, you cannot have differs auth from master
+    # so, only set the host:port only
+    # https://stackoverflow.com/a/46070888/5489910 and https://www.postgresql.org/docs/current/hot-standby.html
+    slaves:
+      - host: "localhost"
+        port: 5433
+      - host: "localhost"
+        port: 5434
+
+# settings for user
+user:
+  db_type: "postgres"
+  # you can register multiple db here, so system will elect by round-robin for each new app
+  # this is for horizontal scaling, we can easily move app/tenant database which has big users in dedicated db
+  postgres:
+    - id: "db1"
+      username: "postgres"
+      password: "postgres"
+      host: "localhost"
+      port: 5432
+      db: "danbam_user"
+    - id: "db2"
+      username: "postgres"
+      password: "postgres"
+      host: "localhost"
+      port: 5432
+      db: "danbam_user"
+
+# settings for token
+token:
+  db_type: "postgres"
+  postgres:
+    username: "postgres"
+    password: "postgres"
+    host: "localhost"
+    port: 5432
+    db: "danbam_token"
+
+# settings for message
+message:
+  db_type: "postgres"
+  postgres:
+    username: "postgres"
+    password: "postgres"
+    host: "localhost"
+    port: 5432
+    db: "danbam_message"
