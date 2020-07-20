@@ -19,9 +19,10 @@ import (
 
 // server is an server for http
 type server struct {
-	e       *echo.Echo
-	stopped bool
-	routes  []*Route
+	startTime time.Time
+	e         *echo.Echo
+	stopped   bool
+	routes    []*Route
 
 	enableProfiling bool
 	listenAddress   string
@@ -50,7 +51,17 @@ func (s *server) init() {
 	s.e = echo.New()
 	s.e.HideBanner = true
 	s.e.HidePort = true
-	s.e.Use(jaegertracing.Trace(s.openTracing))
+	s.e.Use(jaegertracing.TraceWithConfig(jaegertracing.TraceConfig{
+		Skipper: func(eCtx echo.Context) bool {
+			eCtx.Set(startTimeKey, time.Now())
+			if eCtx.Path() == "/ping" {
+				return true
+			}
+
+			return false
+		},
+		Tracer: s.openTracing,
+	}))
 	s.e.Use(stoppingRequest(s.stopped))
 	s.e.Pre(middleware.RemoveTrailingSlash())
 
@@ -117,6 +128,13 @@ func (s *server) init() {
 			zap.Any("resp_body", respBodyObj),
 		)
 	}))
+
+	s.e.GET("/ping", func(eCtx echo.Context) error {
+		return eCtx.JSON(http.StatusOK, map[string]interface{}{
+			"ping": "OK",
+			"time": s.startTime.Format(time.RFC3339),
+		})
+	})
 }
 
 // RegisterRoutes will register all routes
@@ -203,9 +221,10 @@ func NewServer(conf Config) *server {
 	}
 
 	s := &server{
-		e:       echo.New(),
-		stopped: false,
-		routes:  make([]*Route, 0),
+		startTime: time.Now(),
+		e:         echo.New(),
+		stopped:   false,
+		routes:    make([]*Route, 0),
 
 		enableProfiling: conf.EnableProfiling,
 		listenAddress:   conf.ListenAddress,

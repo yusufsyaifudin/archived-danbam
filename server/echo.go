@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/opentracing/opentracing-go"
@@ -78,7 +77,6 @@ func wrapEcho(h Handler) echo.HandlerFunc {
 		}
 
 		eCtx.Response().Writer.Header().Add("Content-Type", resp.ContentType())
-		eCtx.Response().Writer.Header().Add("X-Trace-ID", traceID)
 		eCtx.Response().Writer.Header().Add("X-Uber-ID", traceID)
 
 		// the last is writing the body
@@ -95,13 +93,15 @@ func wrapEcho(h Handler) echo.HandlerFunc {
 func stoppingRequest(stopped bool) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(eCtx echo.Context) error {
+			if !stopped {
+				return next(eCtx)
+			}
+
 			span, ctx := opentracing.StartSpanFromContext(eCtx.Request().Context(), "stoppingRequest")
 			defer func() {
 				span.Finish()
 				ctx.Done()
 			}()
-
-			eCtx.Set(startTimeKey, time.Now())
 
 			traceID := "no-trace-id"
 			if sc, ok := span.Context().(jaeger.SpanContext); ok {
@@ -122,7 +122,6 @@ func stoppingRequest(stopped bool) echo.MiddlewareFunc {
 				})
 
 				eCtx.Response().Writer.Header().Add("Content-Type", ContentTypeJSON)
-				eCtx.Response().Writer.Header().Add("X-Trace-Id", traceID)
 				eCtx.Response().Writer.Header().Add("Uber-Trace-ID", traceID)
 				eCtx.Response().Committed = true
 				return err
